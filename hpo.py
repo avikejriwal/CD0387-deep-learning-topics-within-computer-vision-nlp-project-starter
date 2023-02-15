@@ -14,7 +14,7 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-def test(model, test_loader, criterion):
+def test(model, test_loader, criterion, device='cpu'):
     model.eval()
     test_loss = 0
     correct = 0
@@ -24,7 +24,7 @@ def test(model, test_loader, criterion):
             target = target.to(device)
 
             output = model(data)
-            test_loss += criterion(output, target, reduction="sum").item()
+            test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -143,7 +143,7 @@ def main(args):
     )
     test(model, test_loader, loss_criterion, device=device)
 
-    torch.save(model, "demo-model/model.pth")
+    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model.pth")
 
 
 if __name__ == "__main__":
