@@ -13,10 +13,14 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+from smdebug import modes
+from smdebug.profiler.utils import str2bool
+from smdebug.pytorch import get_hook
 
-def test(model, test_loader, criterion, device='cpu'):
+
+def test(model, test_loader, criterion, device='cpu', hook=None):
     model.eval()
-    hook.set_mode(smd.modes.EVAL)
+    hook.set_mode(modes.EVAL)
     test_loss = 0
     correct = 0
     with torch.no_grad():
@@ -41,11 +45,13 @@ def test(model, test_loader, criterion, device='cpu'):
     )
 
 
-def train(model, train_loader, criterion, optimizer, *, epochs=2, device="cpu"):
+def train(model, train_loader, criterion, optimizer, *,
+          epochs=2, device="cpu", hook=None
+         ):
 
     model = model.to(device)
     model.train()
-    hook.set_mode(smd.modes.TRAIN)
+    hook.set_mode(modes.TRAIN)
 
     for e in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
@@ -132,7 +138,6 @@ def main(args):
     hook = get_hook(create_if_not_exists=True)
     assert hook is not None
     hook.register_hook(model)
-    hook.register_loss(loss_optim)
 
     train_loader, test_loader = create_data_loaders(args)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -150,7 +155,7 @@ def main(args):
     )
     test(model, test_loader, loss_criterion, hook=hook, device=device)
 
-    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model.pth"))
+    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model_final.pth"))
 
 
 if __name__ == "__main__":
