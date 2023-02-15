@@ -49,7 +49,6 @@ def train(model, train_loader, criterion, optimizer, *, epochs=2, device="cpu"):
 
     for e in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
-            batch_idx = batch_idx.to(device)
             data = data.to(device)
             target = target.to(device)
 
