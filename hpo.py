@@ -1,5 +1,5 @@
-#TODO: Import your dependencies.
-#For instance, below are some dependencies you might need if you are using Pytorch
+# TODO: Import your dependencies.
+# For instance, below are some dependencies you might need if you are using Pytorch
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 import os
 import argparse
 from PIL import ImageFile
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
@@ -21,7 +22,7 @@ def test(model, test_loader, criterion):
         for data, target in test_loader:
             data = data.to(device)
             target = target.to(device)
-            
+
             output = model(data)
             test_loss += criterion(output, target, reduction="sum").item()
             pred = output.argmax(dim=1, keepdim=True)
@@ -31,25 +32,27 @@ def test(model, test_loader, criterion):
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset),
-            100.0 * correct / len(test_loader.dataset)
+            test_loss,
+            correct,
+            len(test_loader.dataset),
+            100.0 * correct / len(test_loader.dataset),
         )
     )
 
 
-def train(model, train_loader, criterion, optimizer, *, epochs=2, device='cpu'):
-    
-    model=model.to(device)
-    
+def train(model, train_loader, criterion, optimizer, *, epochs=2, device="cpu"):
+
+    model = model.to(device)
+
     model.train()
-    
+
     for e in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
             batch_idx = batch_idx.to(device)
             data = data.to(device)
             target = target.to(device)
 
-            optimizer.zero_grad()            
+            optimizer.zero_grad()
             output = model(data)
             loss = criterion(output, target)
             loss.backward()
@@ -64,7 +67,7 @@ def train(model, train_loader, criterion, optimizer, *, epochs=2, device='cpu'):
                         loss.item(),
                     )
                 )
-    
+
     return model
 
 
@@ -72,77 +75,80 @@ def net():
     model = models.resnet18(pretrained=True)
 
     for param in model.parameters():
-        param.requires_grad = False   
+        param.requires_grad = False
 
-    num_features=model.fc.in_features
-    model.fc = nn.Sequential(
-                   nn.Linear(num_features, 133))
+    num_features = model.fc.in_features
+    model.fc = nn.Sequential(nn.Linear(num_features, 133))
     return model
 
 
 def create_data_loaders(args):
-    
-    normalizer = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+    normalizer = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
     resizing = (224, 224)
-    
+
     training_transform = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.Resize(resizing),
             transforms.ToTensor(),
-            normalizer
+            normalizer,
         ]
     )
-    
+
     testing_transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.RandomResizedCrop(resizing),
-            normalizer
-        ]
+        [transforms.ToTensor(), transforms.RandomResizedCrop(resizing), normalizer]
     )
-    
+
     data_source = os.environ["SM_CHANNEL_TRAINING"]
-    
-    train_source = os.path.join(data_source, 'train')
-    test_source = os.path.join(data_source, 'valid')
-    
+
+    train_source = os.path.join(data_source, "train")
+    test_source = os.path.join(data_source, "valid")
+
     train_data = torchvision.datasets.ImageFolder(
         root=train_source, transform=training_transform
     )
-    
+
     test_data = torchvision.datasets.ImageFolder(
         root=test_source, transform=testing_transform
     )
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=args.test_batch_size)
-    
+    test_loader = torch.utils.data.DataLoader(
+        test_data, batch_size=args.test_batch_size
+    )
+
     return train_loader, test_loader
 
 
 def main(args):
 
-    model=net()    
+    model = net()
     loss_criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-    
+
     train_loader, test_loader = create_data_loaders(args)
-    device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     print(device)
-    
-    model=train(
-        model, train_loader, loss_criterion,
-        optimizer, epochs=args.epochs, device=device
+
+    model = train(
+        model,
+        train_loader,
+        loss_criterion,
+        optimizer,
+        epochs=args.epochs,
+        device=device,
     )
     test(model, test_loader, loss_criterion, device=device)
-    
+
     torch.save(model, "demo-model/model.pth")
 
 
-if __name__=='__main__':
-    parser=argparse.ArgumentParser()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--batch-size",
         type=int,
@@ -165,9 +171,12 @@ if __name__=='__main__':
         help="number of epochs to train (default: 14)",
     )
     parser.add_argument(
-        "--lr", type=float, default=1.0,
-        metavar="LR", help="learning rate (default: 1.0)"
+        "--lr",
+        type=float,
+        default=1.0,
+        metavar="LR",
+        help="learning rate (default: 1.0)",
     )
-    args=parser.parse_args()
-    
+    args = parser.parse_args()
+
     main(args)
