@@ -68,12 +68,43 @@ def net():
     return model
 
 
-def create_data_loaders(data, batch_size):
-    '''
-    This is an optional function that you may or may not need to implement
-    depending on whether you need to use data loaders or not
-    '''
-    pass
+def create_data_loaders(args):
+    training_transform = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]
+    )
+    
+    testing_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.RandomResizedCrop(224),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]
+    )
+    
+    data_source = os.environ["SM_CHANNEL_TRAINING"]
+    
+    train_source = os.path.join(data_source, 'train')
+    test_source = os.path.join(data_source, 'valid')
+    
+    train_data = torchvision.datasets.ImageFolder(
+        root=train_source, transform=training_transform
+    )
+    
+    test_data = torchvision.datasets.ImageFolder(
+        root=test_source, transform=testing_transform
+    )
+    
+    train_kwargs = {"batch_size": args.batch_size}
+    test_kwargs = {"batch_size": args.test_batch_size}
+    train_loader = torch.utils.data.DataLoader(train_data, **train_kwargs)
+    test_loader = torch.utils.data.DataLoader(test_data, **test_kwargs)
+    
+    return train_loader, test_loader
 
 
 def main(args):

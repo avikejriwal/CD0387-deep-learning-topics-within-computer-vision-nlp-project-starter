@@ -84,9 +84,19 @@ def create_data_loaders(args):
         ]
     )
     
-    train_data = #FILL THIS IN
-    test_data = #FILL THIS IN
-
+    data_source = os.environ["SM_CHANNEL_TRAINING"]
+    
+    train_source = os.path.join(data_source, 'train')
+    test_source = os.path.join(data_source, 'valid')
+    
+    train_data = torchvision.datasets.ImageFolder(
+        root=train_source, transform=training_transform
+    )
+    
+    test_data = torchvision.datasets.ImageFolder(
+        root=test_source, transform=testing_transform
+    )
+    
     train_kwargs = {"batch_size": args.batch_size}
     test_kwargs = {"batch_size": args.test_batch_size}
     train_loader = torch.utils.data.DataLoader(train_data, **train_kwargs)
@@ -100,11 +110,6 @@ def main(args):
     model=net()    
     loss_criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-    
-    # hook = get_hook(create_if_not_exists=True)
-    # assert hook is not None
-    # hook.register_hook(model)
-    # hook.register_loss(loss_optim)
     
     train_loader, test_loader = create_data_loaders(args)
     model=train(
