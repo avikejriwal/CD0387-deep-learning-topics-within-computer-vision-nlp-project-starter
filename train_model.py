@@ -152,7 +152,9 @@ if __name__=='__main__':
         help="number of epochs to train (default: 14)",
     )
     parser.add_argument(
-        "--lr", type=float, default=1.0, metavar="LR", help="learning rate (default: 1.0)"
+        "--lr", type=float, default=1.0,
+        metavar="LR", help="learning rate (default: 1.0)"
+    )
     args=parser.parse_args()
     
     main(args)
