@@ -7,17 +7,22 @@ import torch.optim as optim
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
-
+import os
 import argparse
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-def test(model, test_loader, criterion, hook=None):
+def test(model, test_loader, criterion):
     model.eval()
     hook.set_mode(smd.modes.EVAL)
     test_loss = 0
     correct = 0
     with torch.no_grad():
         for data, target in test_loader:
+            data = data.to(device)
+            target = target.to(device)
+            
             output = model(data)
             test_loss += criterion(output, target, reduction="sum").item()
             pred = output.argmax(dim=1, keepdim=True)
@@ -33,13 +38,19 @@ def test(model, test_loader, criterion, hook=None):
     )
 
 
-def train(model, train_loader, criterion, optimizer, *, hook=None):
+def train(model, train_loader, criterion, optimizer, *, epochs=2, device='cpu'):
+    
+    model=model.to(device)
     model.train()
     hook.set_mode(smd.modes.TRAIN)
     
     for e in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
-            optimizer.zero_grad()
+            batch_idx = batch_idx.to(device)
+            data = data.to(device)
+            target = target.to(device)
+
+            optimizer.zero_grad()            
             output = model(data)
             loss = criterion(output, target)
             loss.backward()
@@ -47,13 +58,15 @@ def train(model, train_loader, criterion, optimizer, *, hook=None):
             if batch_idx % 100 == 0:
                 print(
                     "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        epoch,
+                        e,
                         batch_idx * len(data),
                         len(train_loader.dataset),
                         100.0 * batch_idx / len(train_loader),
                         loss.item(),
                     )
                 )
+    
+    return model
 
 
 def net():
@@ -64,25 +77,29 @@ def net():
 
     num_features=model.fc.in_features
     model.fc = nn.Sequential(
-                   nn.Linear(num_features, 10))
+                   nn.Linear(num_features, 133))
     return model
 
 
 def create_data_loaders(args):
+    
+    normalizer = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    resizing = (224, 224)
+    
     training_transform = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.Resize(224),
+            transforms.Resize(resizing),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            normalizer
         ]
     )
     
     testing_transform = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.RandomResizedCrop(224),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.RandomResizedCrop(resizing),
+            normalizer
         ]
     )
     
@@ -98,11 +115,9 @@ def create_data_loaders(args):
     test_data = torchvision.datasets.ImageFolder(
         root=test_source, transform=testing_transform
     )
-    
-    train_kwargs = {"batch_size": args.batch_size}
-    test_kwargs = {"batch_size": args.test_batch_size}
-    train_loader = torch.utils.data.DataLoader(train_data, **train_kwargs)
-    test_loader = torch.utils.data.DataLoader(test_data, **test_kwargs)
+
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=args.test_batch_size)
     
     return train_loader, test_loader
 
@@ -119,11 +134,17 @@ def main(args):
     hook.register_loss(loss_optim)
     
     train_loader, test_loader = create_data_loaders(args)
+    device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
+    print(device)
+    
     model=train(
         model, train_loader, loss_criterion,
-        optimizer, epochs=args.epochs, hook=hook
+        optimizer, epochs=args.epochs, hook=hook,
+        device=device
     )
-    test(model, test_loader, loss_criterion, hook=hook)
+    test(model, test_loader, loss_criterion, hook=hook,
+         device=device)
     
     torch.save(model, "demo-model/model.pth")
 
