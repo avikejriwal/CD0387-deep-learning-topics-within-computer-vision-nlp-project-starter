@@ -143,7 +143,7 @@ def main(args):
     )
     test(model, test_loader, loss_criterion, device=device)
 
-    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model.pth")
+    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model.pth"))
 
 
 if __name__ == "__main__":
