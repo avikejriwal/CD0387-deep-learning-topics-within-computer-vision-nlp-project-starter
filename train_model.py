@@ -32,7 +32,7 @@ def test(model, test_loader, criterion, device="cpu", hook=None):
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-            if j % 200 == 0 and j > 0:
+            if j % 20 == 0 and j > 0:
                 print(f"finished testing {j} points")
 
     test_loss /= len(test_loader.dataset)
