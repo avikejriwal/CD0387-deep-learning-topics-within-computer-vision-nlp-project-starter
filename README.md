@@ -17,25 +17,24 @@ Upload the data to an S3 bucket through the AWS Gateway so that SageMaker has ac
 ## Hyperparameter Tuning
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
 
-Remember that your README should:
-- Include a screenshot of completed training jobs
-- Logs metrics during the training process
-- Tune at least two hyperparameters
-- Retrieve the best best hyperparameters from all your training jobs
+I used transfer learning on the RESNET18 model for simplicty.
+The main hyperparameters I tuned were the learning rate and the training batch size
+
+
+![HP Tuning](hp.png "HP Tuning")
+
 
 ## Debugging and Profiling
-**TODO**: Give an overview of how you performed model debugging and profiling in Sagemaker
+
+I applied debugging and profiling hooks to the training job so that it would report on issues live during the training
 
 ### Results
-**TODO**: What are the results/insights did you get by profiling/debugging your model?
 
-**TODO** Remember to provide the profiler html/pdf file in your submission.
+I noticed relative underutilization of the GPU instance in the profiler report. I also noticed unusual behavior in the movement of Cross-entropy as the model trained
 
 
 ## Model Deployment
-**TODO**: Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
 
-**TODO** Remember to provide a screenshot of the deployed active endpoint in Sagemaker.
+The model is deployed on a Sagemaker endpoint, and can be queried from within sagemaker by passing an image to it through Boto3, or through a Batch Transform job.
 
-## Standout Suggestions
-**TODO (Optional):** This is where you can provide information about any standout suggestions that you have attempted.
+![Model Endpoint](endpoint.png "Endpoint")
