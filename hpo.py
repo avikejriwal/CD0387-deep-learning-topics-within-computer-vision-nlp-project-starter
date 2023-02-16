@@ -1,6 +1,7 @@
 # TODO: Import your dependencies.
-# For instance, below are some dependencies you might need if you are using Pytorch
-import numpy as np
+# For instance, below are some dependencies
+# you might need if you are using Pytorch
+
 import torch
 import torch.nn as nn
 import torch.optim as optim

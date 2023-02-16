@@ -1,6 +1,6 @@
 # TODO: Import your dependencies.
-# For instance, below are some dependencies you might need if you are using Pytorch
-import numpy as np
+# For instance, below are some dependencies
+# you might need if you are using Pytorch
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -48,7 +48,8 @@ def test(model, test_loader, criterion, device="cpu", hook=None):
 
 
 def train(
-    model, train_loader, criterion, optimizer, *, epochs=2, device="cpu", hook=None
+    model, train_loader, criterion,
+    optimizer, *, epochs=2, device="cpu", hook=None
 ):
     model = model.to(device)
     model.train()
@@ -106,13 +107,14 @@ def create_data_loaders(args):
     )
 
     testing_transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.RandomResizedCrop(resizing), normalizer]
+        [transforms.ToTensor(),
+         transforms.RandomResizedCrop(resizing), normalizer]
     )
 
     data_source = os.environ["SM_CHANNEL_TRAINING"]
 
     train_source = os.path.join(data_source, "train")
-    test_source = os.path.join(data_source, "valid")
+    test_source = os.path.join(data_source, "test")
 
     train_data = torchvision.datasets.ImageFolder(
         root=train_source, transform=training_transform
@@ -122,7 +124,9 @@ def create_data_loaders(args):
         root=test_source, transform=testing_transform
     )
 
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size)
+    train_loader = torch.utils.data.DataLoader(
+        train_data,
+        batch_size=args.batch_size)
     test_loader = torch.utils.data.DataLoader(
         test_data, batch_size=args.test_batch_size
     )
@@ -156,7 +160,8 @@ def main(args):
     test(model, test_loader, loss_criterion, hook=hook, device=device)
 
     torch.save(
-        model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model_final.pth")
+        model.cpu().state_dict(),
+        os.path.join(os.environ["SM_MODEL_DIR"], "model_final.pth"),
     )
 
 
