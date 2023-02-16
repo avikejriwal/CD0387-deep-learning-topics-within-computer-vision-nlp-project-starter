@@ -10,21 +10,20 @@ import torchvision.transforms as transforms
 import os
 import argparse
 from PIL import ImageFile
+from smdebug import modes
+from smdebug.pytorch import get_hook
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-from smdebug import modes
-from smdebug.profiler.utils import str2bool
-from smdebug.pytorch import get_hook
 
-
-def test(model, test_loader, criterion, device='cpu', hook=None):
+def test(model, test_loader, criterion, device="cpu", hook=None):
     model.eval()
     hook.set_mode(modes.EVAL)
     test_loss = 0
     correct = 0
+    print("Testing model...")
     with torch.no_grad():
-        for data, target in test_loader:
+        for j, (data, target) in enumerate(test_loader):
             data = data.to(device)
             target = target.to(device)
 
@@ -32,6 +31,9 @@ def test(model, test_loader, criterion, device='cpu', hook=None):
             test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
+
+            if j % 200 == 0 and j > 0:
+                print(f"finished testing {j} points")
 
     test_loss /= len(test_loader.dataset)
 
@@ -45,13 +47,13 @@ def test(model, test_loader, criterion, device='cpu', hook=None):
     )
 
 
-def train(model, train_loader, criterion, optimizer, *,
-          epochs=2, device="cpu", hook=None
-         ):
-
+def train(
+    model, train_loader, criterion, optimizer, *, epochs=2, device="cpu", hook=None
+):
     model = model.to(device)
     model.train()
     hook.set_mode(modes.TRAIN)
+    print("Training Model...")
 
     for e in range(epochs):
         for batch_idx, (data, target) in enumerate(train_loader):
@@ -89,7 +91,6 @@ def net():
 
 
 def create_data_loaders(args):
-
     normalizer = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -130,7 +131,6 @@ def create_data_loaders(args):
 
 
 def main(args):
-
     model = net()
     loss_criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
@@ -155,7 +155,9 @@ def main(args):
     )
     test(model, test_loader, loss_criterion, hook=hook, device=device)
 
-    torch.save(model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model_final.pth"))
+    torch.save(
+        model, os.path.join(os.environ["SM_CHANNEL_TRAINING"], "model_final.pth")
+    )
 
 
 if __name__ == "__main__":

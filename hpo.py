@@ -14,7 +14,7 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-def test(model, test_loader, criterion, device='cpu'):
+def test(model, test_loader, criterion, device="cpu"):
     model.eval()
     test_loss = 0
     correct = 0
@@ -41,7 +41,6 @@ def test(model, test_loader, criterion, device='cpu'):
 
 
 def train(model, train_loader, criterion, optimizer, *, epochs=2, device="cpu"):
-
     model = model.to(device)
 
     model.train()
@@ -82,7 +81,6 @@ def net():
 
 
 def create_data_loaders(args):
-
     normalizer = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -123,7 +121,6 @@ def create_data_loaders(args):
 
 
 def main(args):
-
     model = net()
     loss_criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
